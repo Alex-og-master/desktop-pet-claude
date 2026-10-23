@@ -1,0 +1,87 @@
+{
+  "name": "desktop-pet-claude",
+  "productName": "Clawdy",
+  "version": "0.1.0",
+  "description": "Una mascota de escritorio pixel art inspirada en el monigote de Claude, con la que puedes hablar.",
+  "main": "src/main/main.js",
+  "author": "Alex-og-master",
+  "license": "MIT",
+  "homepage": "https://github.com/Alex-og-master/desktop-pet-claude",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Alex-og-master/desktop-pet-claude.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "icons": "node scripts/make-icons.js",
+    "check": "node scripts/check.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0"
+  },
+  "devDependencies": {
+    "electron": "^44.9.3",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "io.github.alexogmaster.desktoppetclaude",
+    "productName": "Clawdy",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.entertainment",
+      "icon": "build/icon.png",
+      "extendInfo": {
+        "LSUIElement": true
+      },
+      "identity": "-"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Game",
+      "icon": "build/icon.png",
+      "maintainer": "Alex-og-master",
+      "syncDesktopName": true
+    }
+  },
+  "desktopName": "clawdy.desktop"
+}

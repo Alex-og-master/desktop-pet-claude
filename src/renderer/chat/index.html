@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:" />
+    <title>Hablar con Clawdy</title>
+    <link rel="stylesheet" href="chat.css" />
+  </head>
+  <body>
+    <header>
+      <canvas id="avatar" width="28" height="24"></canvas>
+      <div class="title">
+        <strong id="pet-name">Clawdy</strong>
+        <span id="status">en línea</span>
+      </div>
+      <button id="new-chat" class="icon" title="Nueva conversación">↺</button>
+      <button id="open-settings" class="icon" title="Ajustes">⚙</button>
+    </header>
+
+    <main id="log" aria-live="polite"></main>
+
+    <div id="suggestions">
+      <button>Quédate quieto</button>
+      <button>Sígueme</button>
+      <button>Baila un poco</button>
+      <button>Trae la pelota al centro</button>
+      <button>Vuelve a pasear</button>
+    </div>
+
+    <form id="composer">
+      <textarea id="input" rows="1" placeholder="Escríbele algo…" autofocus></textarea>
+      <button type="submit" id="send">Enviar</button>
+    </form>
+
+    <section id="settings" hidden>
+      <h2>Ajustes</h2>
+      <label>
+        API key de Anthropic
+        <input id="api-key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+        <small id="key-hint">Se guarda cifrada en tu ordenador. Consíguela en console.anthropic.com.</small>
+      </label>
+      <label>
+        Modelo
+        <select id="model">
+          <option value="claude-opus-5-5">Claude Opus 5.5 (más listo)</option>
+          <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (equilibrado)</option>
+          <option value="claude-haiku-5-5">Claude Haiku 5.5 (más rápido y barato)</option>
+        </select>
+      </label>
+      <label>
+        Nombre de la mascota
+        <input id="name" type="text" maxlength="24" />
+      </label>
+      <label>
+        Se duerme tras (segundos sin usar el ordenador)
+        <input id="sleep-after" type="number" min="10" max="3600" step="10" />
+      </label>
+      <label class="row">
+        <input id="open-at-login" type="checkbox" />
+        Abrir al iniciar sesión
+      </label>
+      <div class="actions">
+        <button id="close-settings" type="button" class="secondary">Cancelar</button>
+        <button id="save-settings" type="button">Guardar</button>
+      </div>
+    </section>
+
+    <script src="../pet/sprite.js"></script>
+    <script src="chat.js"></script>
+  </body>
+</html>
