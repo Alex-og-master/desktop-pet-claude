@@ -1,6 +1,7 @@
 // Motor de la mascota: estados, físicas, objetos, partículas e interacción.
 (function () {
   const { drawPet, TOYS, HEART, GRID } = window.Sprites;
+  const Quips = window.Quips;
 
   // Si no estamos dentro de Electron (por ejemplo, abriendo el HTML en un
   // navegador para probar), usamos un API vacío.
@@ -36,7 +37,8 @@
   window.addEventListener('resize', resize);
   resize();
 
-  const cfg = { scale: 4, name: 'Clawdy', sleepAfter: 120 };
+  // chatter: 0 = callado, 1 = pocos comentarios, 2 = normal, 3 = muchos
+  const cfg = { scale: 4, name: 'Clawdy', sleepAfter: 120, chatter: 2 };
   const GRAVITY = 2400;
   const S = () => cfg.scale;
   const ground = () => H - 1;
@@ -198,7 +200,7 @@
     dropCarried(pet.facing * 220, -260);
     pet.task = null;
     setState('trip');
-    if (Math.random() < 0.5) say(pick(['¡Uy!', '¡Ay, ay, ay!', 'Ups…', '¡Mi pata!']), 1.8);
+    if (Math.random() < 0.6) say(Quips.line('trip'), 2.2);
   }
 
   function fallAsleep(forced) {
@@ -420,7 +422,7 @@
       !pet.task &&
       pet.mode !== 'follow'
     ) {
-      say(pick(['Zzz…', '*bosteza* me echo una siesta', 'Hora de dormir…']), 2.5);
+      if (cfg.chatter > 0) say(Quips.line('going_to_sleep'), 3);
       fallAsleep(false);
     }
 
@@ -475,7 +477,7 @@
           for (let i = 0; i < 5; i++) emit('dust', pet.x + rand(-8, 8) * s, ground() - 2, { vx: rand(-60, 60), vy: rand(-60, -20), life: 0.5 });
           if (impact > 1300 && !d.soft) {
             setState('splat');
-            say(pick(['¡Ay!', '¡Auch!', 'Eso ha dolido…', '¡Plaf!']), 2);
+            say(Quips.line('splat'), 2.5);
           } else setState('land');
         }
         break;
@@ -956,7 +958,7 @@
         if (pet.state === 'sleep') pet.forcedSleep = false;
         cancelTask();
         setState('dragged');
-        say(pick(['¡Eh! ¡Bájame!', '¡Uaaah!', '¡Que me mareo!', '¿A dónde vamos?']), 1.8);
+        say(Quips.line('grabbed'), 2);
       } else {
         if (pet.carrying === drag.toy) pet.carrying = null;
         if (pet.task && pet.task.toy === drag.toy) pet.task = null;
@@ -1020,21 +1022,21 @@
   function clickPet() {
     if (pet.state === 'sleep') {
       wakeUp();
-      say(pick(['¿Mmm…? ¿Qué pasa?', '*se despierta* ¡Estaba soñando con galletas!', 'Cinco minutitos más…']), 2.5);
+      say(Quips.line('woken'), 3);
       return;
     }
     if (BUSY.has(pet.state)) return;
     clicks++;
     if (clicks > 6 && Math.random() < 0.5) {
       clicks = 0;
-      say(pick(['¡Vale, vale, ya me has hecho cosquillas suficientes!', '¡Para, que me da la risa!']), 2.5);
+      say(Quips.line('tickled_too_much'), 3);
       return trip();
     }
     weighted([
       [3, () => {
         for (let i = 0; i < 3; i++) emit('heart', pet.x + rand(-8, 8) * S(), pet.y - 14 * S(), { vx: rand(-30, 30), vy: rand(-70, -40), life: 1.3 });
         setState('proud');
-        say(pick(['¡Hola! :)', '¡Jiji!', '♥', `¡Soy ${cfg.name}!`]), 1.8);
+        say(Quips.line('poke', { name: cfg.name }), 2.5);
       }],
       [2, () => jump(650)],
       [1, () => setState('wave')],
@@ -1051,7 +1053,9 @@
     userIdle = secs;
   });
   api.onConfig((c) => {
+    const chatterChanged = c.chatter !== cfg.chatter;
     Object.assign(cfg, c);
+    if (chatterChanged) resetChatterTimer();
   });
   api.onSay((text) => say(text));
   api.onCommand((cmd) => {
@@ -1085,6 +1089,69 @@
     }
   }
 
+  // ---------- comentarios espontáneos (frases prefijadas, sin IA) ----------
+  const CHATTER_GAP = { 1: [12, 20], 2: [5, 10], 3: [2, 4] }; // minutos
+  const AWAY = 300; // segundos sin tocar nada para considerar que te has ido
+  const chatter = { timer: 0, activeFor: 0, streaks: 0, away: false, dream: 60 };
+  function resetChatterTimer() {
+    const [a, b] = CHATTER_GAP[cfg.chatter] || CHATTER_GAP[2];
+    chatter.timer = rand(a, b) * 60;
+  }
+  resetChatterTimer();
+
+  const canTalk = () => !bubble && !BUSY.has(pet.state) && pet.state !== 'sleep' && pet.state !== 'wake' && !drag;
+
+  function updateChatter(dt) {
+    // seguimiento de tu actividad (con o sin comentarios activados)
+    if (userIdle < AWAY) chatter.activeFor += dt;
+    else {
+      chatter.activeFor = 0;
+      chatter.streaks = 0;
+      chatter.away = true;
+    }
+    if (!cfg.chatter) return;
+
+    // vuelves después de un rato fuera
+    if (chatter.away && userIdle < 2) {
+      chatter.away = false;
+      chatter.pendingWelcome = 2.5; // deja que se despierte primero
+    }
+    if (chatter.pendingWelcome != null) {
+      chatter.pendingWelcome -= dt;
+      if (chatter.pendingWelcome <= 0 && canTalk()) {
+        chatter.pendingWelcome = null;
+        say(Quips.line('welcome_back'));
+        resetChatterTimer();
+      }
+      return;
+    }
+
+    // llevas mucho rato sin parar (cada hora)
+    const hours = Math.floor(chatter.activeFor / 3600);
+    if (hours > chatter.streaks && canTalk()) {
+      chatter.streaks = hours;
+      say(Quips.line('long_streak', { mins: hours * 60 }), 7);
+      resetChatterTimer();
+      return;
+    }
+
+    // habla en sueños de vez en cuando
+    if (pet.state === 'sleep') {
+      chatter.dream -= dt;
+      if (chatter.dream <= 0 && !bubble) {
+        chatter.dream = rand(60, 150);
+        if (Math.random() < 0.5) say(Quips.line('dream'), 3.5);
+      }
+      return;
+    }
+
+    chatter.timer -= dt;
+    if (chatter.timer <= 0 && canTalk()) {
+      say(Quips.line(Quips.ambientCategory({ mode: pet.mode, toys: toys.length }), { name: cfg.name }));
+      resetChatterTimer();
+    }
+  }
+
   // ---------- bucle principal ----------
   let last = performance.now();
   function frame(now) {
@@ -1093,6 +1160,7 @@
     updatePet(dt);
     updateToys(dt);
     updateParticles(dt);
+    updateChatter(dt);
     if (bubble) {
       bubble.t += dt;
       if (bubble.t > bubble.dur) bubble = null;
@@ -1107,9 +1175,12 @@
   pet.x = W * 0.75;
   setState('air', {});
   spawnToy('ball', W * 0.6, -200);
-  setTimeout(() => say(`¡Hola! Soy ${cfg.name}. Haz doble clic en mí para hablar.`, 5), 900);
+  setTimeout(() => {
+    say(Quips.line(Quips.greetingCategory()), 4.5);
+    setTimeout(() => say(Quips.line('hint')), 5500);
+  }, 1800);
   requestAnimationFrame(frame);
 
   // Para pruebas desde la consola
-  window.__pet = { pet, toys, runCommand, snapshot, say, cfg };
+  window.__pet = { pet, toys, runCommand, snapshot, say, cfg, chatter, setUserIdle: (s) => (userIdle = s) };
 })();

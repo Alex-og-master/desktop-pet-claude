@@ -12,8 +12,9 @@
 - 🤕 **Se cae**: a veces se tropieza andando y acaba boca arriba pataleando. Si lo coges con el ratón y lo sueltas desde arriba, cae con un buen *plaf*.
 - 😴 **Se duerme** si no tocas el teclado ni el ratón durante un rato (2 minutos por defecto) y se despierta cuando vuelves.
 - 📦 **Mueve cosas**: una pelota, cajas y documentos. Los coge, se los pone en la cabeza y los lleva a otro sitio. La pelota la empuja y le da patadas.
+- 😏 **Comenta cosas, con sarcasmo**: según la hora ("¿las 3 de la mañana? Tu cama te echa de menos"), si llevas una hora sin parar, si vuelves después de un rato fuera, si es lunes… Son **frases ya escritas, no usan IA ni gastan nada**. Puedes elegir cuánto habla (callado, pocos, normal o muchos) en el menú o en ajustes.
 - 🖱️ **Interacción**: clic para hacerle cosquillas, arrastrar para cogerlo (¡y lanzarlo!), doble clic para hablar con él y clic derecho para ver el menú.
-- 💬 **Chat con Claude**: le escribes y responde en un bocadillo encima de su cabeza. Usa *tool use* para controlar su propio cuerpo:
+- 💬 **Chat con Claude**: le escribes y responde, con su personalidad graciosa y sarcástica, en un bocadillo encima de su cabeza. **Claude solo se usa cuando le escribes en el chat**; nada más gasta tokens. Usa *tool use* para controlar su propio cuerpo:
   - "Quédate quieto" / "Vuelve a pasear" / "Sígueme"
   - "Baila", "salta", "saluda", "haz como que te caes", "duérmete"
   - "Saca una caja y llévala a la derecha", "dale una patada a la pelota"
@@ -90,7 +91,7 @@ src/
 │   └── settings.js    Ajustes y API key cifrada
 ├── preload/           Puentes seguros entre Electron y las páginas
 ├── renderer/
-│   ├── pet/           La mascota: sprite pixel art + motor (estados, físicas, objetos)
+│   ├── pet/           La mascota: sprite pixel art, frases (quips.js) y motor (estados, físicas, objetos)
 │   └── chat/          La ventana de chat y ajustes
 └── assets/            Iconos
 ```
@@ -106,6 +107,10 @@ src/
 - Solo vive en la **pantalla principal**.
 - En Linux con **Wayland**, el sueño automático y el seguimiento del ratón pueden no funcionar, porque Wayland no deja que las apps lean el puntero ni el tiempo de inactividad. Con X11 funciona todo. La transparencia necesita un compositor (lo normal en GNOME y KDE).
 - "Abrir al iniciar sesión" funciona en Windows y macOS.
+
+## Añadir frases
+
+Todas las frases están en [`src/renderer/pet/quips.js`](src/renderer/pet/quips.js), agrupadas por situación (`late_night`, `welcome_back`, `trip`…). Añade las tuyas a la lista que quieras: no se repite ninguna hasta haber dicho todas las de su grupo.
 
 ## Ideas para seguir
 

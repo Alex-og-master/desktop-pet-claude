@@ -88,7 +88,7 @@
   $('new-chat').addEventListener('click', async () => {
     await api.reset();
     log.innerHTML = '';
-    add('pet', `¡Empezamos de cero! ¿Qué hacemos?`);
+    add('pet', 'Borrón y cuenta nueva. Ya no me acuerdo de nada. Qué alivio.');
   });
 
   // ---------- ajustes ----------
@@ -103,6 +103,7 @@
     $('model').value = settings.model;
     $('name').value = settings.name;
     $('sleep-after').value = settings.sleepAfter;
+    $('chatter').value = String(settings.chatter);
     $('open-at-login').checked = settings.openAtLogin;
     $('settings').hidden = false;
   }
@@ -117,6 +118,7 @@
       model: $('model').value,
       name: $('name').value,
       sleepAfter: Number($('sleep-after').value),
+      chatter: Number($('chatter').value),
       openAtLogin: $('open-at-login').checked,
     };
     const key = $('api-key').value.trim();
@@ -128,7 +130,7 @@
   api.onOpenSettings(openSettings);
 
   refreshSettings().then(() => {
-    add('pet', `¡Hola! Soy ${settings.name}. Puedes pedirme que me quede quieto, que te siga, que baile o que mueva cosas. ¿Qué hacemos?`);
+    add('pet', `Hola, soy ${settings.name}. Puedo quedarme quieto, seguirte, bailar o mover cosas. También puedo juzgar en silencio. ¿Qué hacemos?`);
     if (new URLSearchParams(location.search).get('settings') || !settings.hasKey) openSettings();
   });
 })();

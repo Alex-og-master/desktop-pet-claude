@@ -119,7 +119,7 @@ function fitPetWindow() {
 
 function sendConfig() {
   const s = settings.load();
-  sendToPet('pet:config', { name: s.name, scale: s.scale, sleepAfter: s.sleepAfter });
+  sendToPet('pet:config', { name: s.name, scale: s.scale, sleepAfter: s.sleepAfter, chatter: s.chatter });
 }
 
 // Como la ventana ocupa toda la pantalla, solo atrapa el ratón cuando el
@@ -237,6 +237,20 @@ function buildMenuTemplate() {
       })),
     },
     {
+      label: 'Comentarios (gratis, sin IA)',
+      submenu: [
+        [0, 'Callado'],
+        [1, 'Pocos'],
+        [2, 'Normal'],
+        [3, 'Muchos'],
+      ].map(([chatter, label]) => ({
+        label,
+        type: 'radio',
+        checked: s.chatter === chatter,
+        click: () => applySettings({ chatter }),
+      })),
+    },
+    {
       label: 'Ocultar',
       type: 'checkbox',
       checked: paused,
@@ -320,6 +334,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if (patch && typeof patch === 'object') {
     if (typeof patch.name === 'string' && patch.name.trim()) clean.name = patch.name.trim().slice(0, 24);
     if ([3, 4, 6].includes(patch.scale)) clean.scale = patch.scale;
+    if ([0, 1, 2, 3].includes(patch.chatter)) clean.chatter = patch.chatter;
     if (Number.isFinite(patch.sleepAfter)) clean.sleepAfter = Math.max(10, Math.min(3600, Math.round(patch.sleepAfter)));
     if (typeof patch.model === 'string' && /^claude-[a-z0-9.-]+$/.test(patch.model)) clean.model = patch.model;
     if (typeof patch.openAtLogin === 'boolean') clean.openAtLogin = patch.openAtLogin;
