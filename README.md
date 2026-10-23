@@ -71,15 +71,9 @@ PET_DEBUG=1 npm start   # muestra en la terminal los mensajes de la mascota
 
 ## Publicar una versión nueva
 
-Los instaladores se generan solos con GitHub Actions al subir una etiqueta:
+Cambia el número de `version` en `package.json` (por ejemplo, de `0.1.0` a `0.2.0`) y súbelo a `main`. El workflow [`release.yml`](.github/workflows/release.yml) ve que esa versión aún no está publicada, crea la release `v0.2.0`, compila en Windows, macOS y Linux y sube los instaladores a la página de Releases.
 
-```bash
-# sube la versión en package.json y luego:
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-El workflow [`release.yml`](.github/workflows/release.yml) compila en Windows, macOS y Linux y sube los archivos a la página de Releases.
+También se puede lanzar a mano desde la pestaña *Actions* (*Release → Run workflow*) o subiendo una etiqueta `vX.Y.Z`.
 
 ## Cómo funciona
 

@@ -1,13 +1,18 @@
-# Al subir una etiqueta vX.Y.Z se compilan los instaladores para Windows,
-# macOS y Linux y se publican en la página de Releases.
+# Publica una versión nueva con instaladores para Windows, macOS y Linux.
 #
-#   git tag v0.1.0
-#   git push origin v0.1.0
+# Se lanza sola cuando llega a main un package.json con una versión que aún
+# no está publicada (por ejemplo, al pasar de 0.1.0 a 0.2.0). También se puede
+# lanzar a mano desde la pestaña Actions o subiendo una etiqueta vX.Y.Z.
 name: Release
 
 on:
   push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/release.yml
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,17 +20,38 @@ permissions:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      publish: ${{ steps.version.outputs.publish }}
     steps:
-      - name: Crear la release si no existe
+      - uses: actions/checkout@v4
+      - name: Ver si esta versión ya está publicada
+        id: version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+             && [ "$GITHUB_REF" != "refs/tags/$TAG" ] && [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]; then
+            echo "La versión $TAG ya está publicada; no hay nada que hacer."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Crear la release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Clawdy $TAG" --generate-notes
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Clawdy $TAG" --generate-notes
 
   build:
     needs: create-release
+    if: needs.create-release.outputs.publish == 'true'
     strategy:
       fail-fast: false
       matrix:
