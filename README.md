@@ -8,15 +8,16 @@
 
 ## Qué hace
 
-- 🚶 **Pasea** por la pantalla, encima de todas las ventanas, sin molestar: los clics pasan a las ventanas de debajo salvo cuando tocas al monigote o a sus objetos.
-- 🤕 **Se cae**: a veces se tropieza andando y acaba boca arriba pataleando. Si lo coges con el ratón y lo sueltas desde arriba, cae con un buen *plaf*.
+- 🚶 **Recorre toda la pantalla**: pasea por el suelo, trepa por las paredes y anda boca abajo por el techo, siempre encima de todas las ventanas. Los clics pasan a las ventanas de debajo salvo cuando tocas al monigote o a sus objetos.
+- 🕷️ **Se agarra**: si lo lanzas contra una pared o el techo, a veces se queda colgado; y si lo sueltas despacio junto a un borde, se engancha ahí.
+- 🤕 **Se cae**: a veces se tropieza andando y acaba boca arriba pataleando, o se resbala de la pared. Si se queda dormido colgado del techo… pues eso. Y si lo coges con el ratón y lo sueltas desde arriba, cae con un buen *plaf*.
 - 😴 **Se duerme** si no tocas el teclado ni el ratón durante un rato (2 minutos por defecto) y se despierta cuando vuelves.
 - 📦 **Mueve cosas**: una pelota, cajas y documentos. Los coge, se los pone en la cabeza y los lleva a otro sitio. La pelota la empuja y le da patadas.
 - 😏 **Comenta cosas, con sarcasmo**: según la hora ("¿las 3 de la mañana? Tu cama te echa de menos"), si llevas una hora sin parar, si vuelves después de un rato fuera, si es lunes… Son **frases ya escritas, no usan IA ni gastan nada**. Puedes elegir cuánto habla (callado, pocos, normal o muchos) en el menú o en ajustes.
 - 🖱️ **Interacción**: clic para hacerle cosquillas, arrastrar para cogerlo (¡y lanzarlo!), doble clic para hablar con él y clic derecho para ver el menú.
 - 💬 **Chat con Claude**: le escribes y responde, con su personalidad graciosa y sarcástica, en un bocadillo encima de su cabeza. **Claude solo se usa cuando le escribes en el chat**; nada más gasta tokens. Usa *tool use* para controlar su propio cuerpo:
   - "Quédate quieto" / "Vuelve a pasear" / "Sígueme"
-  - "Baila", "salta", "saluda", "haz como que te caes", "duérmete"
+  - "Baila", "salta", "saluda", "haz como que te caes", "duérmete", "sube al techo", "suéltate"
   - "Saca una caja y llévala a la derecha", "dale una patada a la pelota"
 
 ## Descargar
@@ -108,7 +109,7 @@ Todas las frases están en [`src/renderer/pet/quips.js`](src/renderer/pet/quips.
 
 ## Ideas para seguir
 
-- Más objetos y que la mascota trepe por los bordes de las ventanas.
+- Más objetos y que la mascota se suba encima de las ventanas abiertas.
 - Varias pantallas.
 - Que te avise de cosas: recordatorios o un temporizador Pomodoro.
 - Skins: cambiar colores o accesorios (gorritos 🎩).

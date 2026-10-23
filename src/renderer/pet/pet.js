@@ -75,6 +75,9 @@
     carrying: null,
     task: null,
     rot: 0,
+    surface: 'air', // floor | right | ceiling | left | air
+    p: 0,
+    afterLand: null,
     sx: 1,
     sy: 1,
     anim: 0,
@@ -91,6 +94,59 @@
   const petHeight = () => 13 * S();
   const minX = () => petHalfW() + 2;
   const maxX = () => W - petHalfW() - 2;
+  const minY = () => petHalfW() + 2;
+  const maxY = () => ground() - petHalfW() - 2;
+
+  // ---------- recorrido por los bordes de la pantalla ----------
+  // Cuando no está en el aire, la mascota va pegada al borde de la pantalla:
+  // suelo → pared derecha → techo → pared izquierda → suelo. Su posición es una
+  // sola coordenada "p" a lo largo de ese recorrido. Cada lado gira el sprite,
+  // así que avanzar hacia p+ siempre es mirar hacia delante (facing = 1).
+  const SURFACE_ROT = { floor: 0, right: -90, ceiling: 180, left: 90 };
+  const SURFACE_NAMES = { floor: 'el suelo', right: 'la pared derecha', ceiling: 'el techo', left: 'la pared izquierda', air: 'el aire' };
+  function perim() {
+    const lf = Math.max(1, maxX() - minX());
+    const lw = Math.max(1, maxY() - minY());
+    return { lf, lw, total: 2 * (lf + lw) };
+  }
+  function wrapP(p) {
+    const t = perim().total;
+    return ((p % t) + t) % t;
+  }
+  function placeAt(p) {
+    const { lf, lw } = perim();
+    p = wrapP(p);
+    pet.p = p;
+    if (p < lf) {
+      pet.surface = 'floor';
+      pet.x = minX() + p;
+      pet.y = ground();
+    } else if (p < lf + lw) {
+      pet.surface = 'right';
+      pet.x = W;
+      pet.y = maxY() - (p - lf);
+    } else if (p < 2 * lf + lw) {
+      pet.surface = 'ceiling';
+      pet.x = maxX() - (p - lf - lw);
+      pet.y = 0;
+    } else {
+      pet.surface = 'left';
+      pet.x = 0;
+      pet.y = minY() + (p - 2 * lf - lw);
+    }
+  }
+  const floorP = (x) => clamp(x, minX(), maxX()) - minX();
+  // Se agarra a un lado: coord es la x (suelo/techo) o la y (paredes).
+  function attach(surface, coord) {
+    const { lf, lw } = perim();
+    if (surface === 'floor') placeAt(floorP(coord));
+    else if (surface === 'right') placeAt(lf + (maxY() - clamp(coord, minY(), maxY())));
+    else if (surface === 'ceiling') placeAt(lf + lw + (maxX() - clamp(coord, minX(), maxX())));
+    else placeAt(2 * lf + lw + (clamp(coord, minY(), maxY()) - minY()));
+  }
+  const onFloor = () => pet.surface === 'floor';
+  const offFloor = () => pet.surface !== 'floor' && pet.surface !== 'air';
+  const normAngle = (a) => ((((a + 180) % 360) + 360) % 360) - 180;
 
   function setState(name, data) {
     if (!['trip', 'air', 'dragged', 'spin'].includes(name)) pet.rot = 0;
@@ -176,14 +232,56 @@
   }
 
   // ---------- acciones básicas ----------
+  // Andar hasta una x del suelo (en línea recta).
   function walkTo(x, opts) {
+    walkToP(floorP(x), Object.assign({ direct: true }, opts));
+  }
+
+  // Andar hasta un punto cualquiera del recorrido; por defecto, por el camino más corto.
+  function walkToP(target, opts) {
     const o = opts || {};
+    target = wrapP(target);
+    let dir = o.dir;
+    if (!dir) dir = o.direct ? Math.sign(target - pet.p) || 1 : wrapP(target - pet.p) <= perim().total / 2 ? 1 : -1;
     setState('walk', {
-      target: clamp(x, minX(), maxX()),
+      target,
+      dir,
       speed: (o.run ? 170 : 65) * (S() / 4),
       onArrive: o.onArrive,
       noTrip: o.noTrip,
     });
+  }
+
+  // Trepa por la pared más cercana (o la que toque) hasta un punto de las paredes o el techo.
+  function climb(toCeiling) {
+    const { lf, lw, total } = perim();
+    const target = toCeiling ? lf + lw + rand(0.2, 0.8) * lf : rand(lf, total);
+    walkToP(target, { noTrip: true, dir: Math.random() < 0.5 ? 1 : -1 });
+    if (Math.random() < 0.35) say(Quips.line('climb'), 2.5);
+  }
+
+  // Se suelta de la pared o del techo y cae.
+  function letGo(quip) {
+    if (!offFloor()) return;
+    const surf = pet.surface;
+    const s = S();
+    pet.rot = SURFACE_ROT[surf];
+    if (surf === 'left') {
+      pet.x = minX();
+      pet.vx = 120;
+    } else if (surf === 'right') {
+      pet.x = maxX();
+      pet.vx = -120;
+    } else {
+      pet.vx = rand(-60, 60);
+    }
+    if (surf === 'ceiling') pet.y = 13 * s;
+    else if (surf !== 'floor') pet.y = Math.max(13 * s, pet.y + 6 * s);
+    pet.vy = surf === 'ceiling' ? 0 : -80;
+    pet.surface = 'air';
+    setState('air', { noGrab: 0.5 });
+    pet.rot = SURFACE_ROT[surf];
+    if (quip) say(Quips.line(quip), 2.5);
   }
 
   function idle(dur) {
@@ -191,12 +289,15 @@
   }
 
   function jump(power) {
+    if (offFloor()) return letGo('drop');
+    pet.surface = 'air';
     pet.vy = -(power || 780) * Math.sqrt(S() / 4);
     pet.vx = pet.state === 'walk' ? pet.facing * pet.data.speed : 0;
     setState('air', { soft: true });
   }
 
   function trip() {
+    if (offFloor()) return letGo('slip');
     dropCarried(pet.facing * 220, -260);
     pet.task = null;
     setState('trip');
@@ -260,6 +361,7 @@
   // ---------- cerebro ----------
   function think() {
     if (pet.mode === 'stay') return idle(rand(2, 5));
+    if (pet.mode === 'follow' && offFloor()) return letGo('drop');
     if (pet.mode === 'follow') {
       const dx = cursor.x - pet.x;
       if (Math.abs(dx) > 60 && cursor.x > -1000) return walkTo(cursor.x - Math.sign(dx) * 40, { run: Math.abs(dx) > 300 });
@@ -267,11 +369,23 @@
       return idle(0.4);
     }
 
+    if (offFloor()) {
+      const { lf, total } = perim();
+      return weighted([
+        [30, () => walkToP(rand(lf, total))],
+        [18, () => walkToP(rand(0, lf))],
+        [pet.surface === 'ceiling' ? 16 : 10, () => letGo('drop')],
+        [14, () => idle(rand(1.5, 4))],
+        [3, () => setState('wave')],
+      ])();
+    }
+
     const ball = toys.find((t) => t.kind === 'ball' && !t.held);
     const anyToy = toys.filter((t) => !t.held);
     const action = weighted([
-      [45, () => walkTo(rand(minX(), maxX()), { run: Math.random() < 0.15 })],
-      [20, () => idle(rand(2, 5))],
+      [40, () => walkTo(rand(minX(), maxX()), { run: Math.random() < 0.15 })],
+      [10, () => idle(rand(2, 5))],
+      [16, () => climb(Math.random() < 0.5)],
       [anyToy.length ? 10 : 0, () => moveToyTask(pick(anyToy), rand(minX(), maxX()))],
       [ball ? 8 : 0, () => kickTask(ball)],
       [5, () => jump()],
@@ -284,8 +398,18 @@
   }
 
   // ---------- comandos (desde el chat con Claude o el menú) ----------
+  const FLOOR_ACTIONS = new Set(['jump', 'dance', 'trip', 'kick_ball', 'sleep']);
+  const needsFloor = (cmd) =>
+    cmd.type === 'move_to' || cmd.type === 'move_object' || (cmd.type === 'action' && FLOOR_ACTIONS.has(cmd.action));
+
   function runCommand(cmd) {
     if (pet.state === 'dragged') return 'Ahora mismo el usuario me está sujetando con el ratón.';
+    if (needsFloor(cmd) && !onFloor()) {
+      const where = SURFACE_NAMES[pet.surface];
+      if (offFloor()) letGo('drop');
+      pet.afterLand = () => runCommand(cmd);
+      return `Estaba en ${where}: primero bajo al suelo y luego lo hago.`;
+    }
     const awake = () => {
       if (pet.state === 'sleep') pet.forcedSleep = false;
     };
@@ -365,6 +489,16 @@
       case 'sleep':
         fallAsleep(true);
         return 'Durmiendo hasta que me despierten.';
+      case 'climb':
+        if (pet.surface === 'ceiling') return 'Ya estoy en el techo.';
+        if (pet.surface === 'air') return 'Estoy cayendo, ahora no puedo trepar.';
+        cancelTask();
+        climb(true);
+        return 'Trepando por la pared hasta el techo.';
+      case 'let_go':
+        if (!offFloor()) return 'No estoy colgado de ningún sitio.';
+        letGo('drop');
+        return 'Me suelto y caigo al suelo.';
       case 'wake_up':
         if (pet.state !== 'sleep') return 'Ya estaba despierto.';
         wakeUp();
@@ -387,7 +521,8 @@
       state: pet.state,
       mode: pet.mode,
       asleep: pet.state === 'sleep',
-      position: `${where(pet.x)} (${Math.round((pet.x / W) * 100)}% del ancho)`,
+      surface: SURFACE_NAMES[pet.surface],
+      position: `${where(pet.x)} (${Math.round((pet.x / W) * 100)}% del ancho, ${Math.round((pet.y / H) * 100)}% del alto)`,
       carrying: pet.carrying ? TOYS[pet.carrying.kind].label : null,
       objects: toys.map((t) => `${TOYS[t.kind].label} en ${where(t.x)}${t.held === 'user' ? ' (el usuario la tiene cogida)' : ''}`),
       userIdleSeconds: Math.round(userIdle),
@@ -415,15 +550,18 @@
       pet.sy += (1 - pet.sy) * Math.min(1, dt * k);
     };
 
-    // dormirse si el usuario no hace nada
+    // dormirse si el usuario no hace nada (si está colgado, se queda frito y se cae)
     if (
       userIdle >= cfg.sleepAfter &&
       (pet.state === 'idle' || pet.state === 'walk') &&
       !pet.task &&
       pet.mode !== 'follow'
     ) {
-      if (cfg.chatter > 0) say(Quips.line('going_to_sleep'), 3);
-      fallAsleep(false);
+      if (offFloor()) letGo('asleep_fall');
+      else {
+        if (cfg.chatter > 0) say(Quips.line('going_to_sleep'), 3);
+        fallAsleep(false);
+      }
     }
 
     switch (pet.state) {
@@ -431,7 +569,13 @@
         pet.vx = 0;
         relax(10);
         pet.rot = 0;
-        if (cursor.x > -1000 && Math.abs(cursor.x - pet.x) < 250 && Math.random() < dt * 0.5) {
+        if (pet.afterLand && onFloor()) {
+          const next = pet.afterLand;
+          pet.afterLand = null;
+          next();
+          break;
+        }
+        if (onFloor() && cursor.x > -1000 && Math.abs(cursor.x - pet.x) < 250 && Math.random() < dt * 0.5) {
           pet.facing = cursor.x > pet.x ? 1 : -1;
         }
         if (pet.st > d.dur) think();
@@ -440,18 +584,21 @@
       case 'walk': {
         relax(10);
         pet.rot = 0;
-        const dx = d.target - pet.x;
-        if (Math.abs(dx) < 3) {
-          pet.x = d.target;
+        const remaining = d.dir > 0 ? wrapP(d.target - pet.p) : wrapP(pet.p - d.target);
+        const speed = onFloor() ? d.speed : Math.min(d.speed, 50 * (s / 4)); // trepando va más lento
+        const step = speed * dt;
+        if (remaining <= step) {
+          placeAt(d.target);
           if (d.onArrive) d.onArrive();
           else idle();
           break;
         }
-        pet.facing = dx > 0 ? 1 : -1;
-        pet.x += pet.facing * Math.min(Math.abs(dx), d.speed * dt);
-        pet.vx = pet.facing * d.speed;
-        // a veces se tropieza
-        if (!d.noTrip && !pet.carrying && Math.random() < dt * 0.04) trip();
+        pet.facing = d.dir;
+        placeAt(pet.p + d.dir * step);
+        pet.vx = onFloor() ? pet.facing * speed : 0;
+        // a veces se tropieza, o se resbala de la pared
+        if (onFloor() && !d.noTrip && !pet.carrying && Math.random() < dt * 0.04) trip();
+        else if (offFloor() && pet.st > 1.5 && Math.random() < dt * 0.005) letGo('slip');
         if (pet.mode === 'follow' && pet.st > 0.4) think();
         break;
       }
@@ -460,9 +607,30 @@
         pet.x += pet.vx * dt;
         pet.y += pet.vy * dt;
         if (d.spin) pet.rot += d.spin * dt;
+        else pet.rot += (0 - normAngle(pet.rot)) * Math.min(1, dt * 5);
+        const canGrab = pet.st > (d.noGrab || 0.15);
+        // al chocar con una pared o el techo, a veces se agarra
         if (pet.x < minX() || pet.x > maxX()) {
+          const side = pet.x < minX() ? 'left' : 'right';
+          if (canGrab && Math.abs(pet.vy) < 1100 && pet.y < maxY() && Math.random() < 0.5) {
+            attach(side, pet.y - 6 * s);
+            pet.facing = Math.random() < 0.5 ? 1 : -1;
+            setState('land');
+            if (Math.random() < 0.5) say(Quips.line('grab_wall'), 2);
+            break;
+          }
           pet.x = clamp(pet.x, minX(), maxX());
           pet.vx *= -0.5;
+        }
+        if (pet.y - petHeight() < 0 && pet.vy < 0) {
+          if (canGrab && Math.random() < 0.45) {
+            attach('ceiling', pet.x);
+            setState('land');
+            if (Math.random() < 0.5) say(Quips.line('grab_wall'), 2);
+            break;
+          }
+          pet.y = petHeight();
+          pet.vy = -pet.vy * 0.3;
         }
         if (pet.vy < 0) {
           pet.sy = 1.15;
@@ -470,7 +638,7 @@
         } else relax(6);
         if (pet.y >= ground()) {
           const impact = pet.vy;
-          pet.y = ground();
+          attach('floor', pet.x);
           pet.vx = 0;
           pet.vy = 0;
           pet.rot = 0;
@@ -507,7 +675,7 @@
         const t = pet.st;
         if (t < 0.35) {
           pet.rot = pet.facing * 180 * (t / 0.35);
-          pet.x = clamp(pet.x + pet.facing * 90 * dt * (s / 4), minX(), maxX());
+          placeAt(clamp(pet.p + pet.facing * 90 * dt * (s / 4), 0, perim().lf));
         } else if (t < 1.9) {
           pet.rot = pet.facing * 180;
           if (!d.stars) {
@@ -624,8 +792,7 @@
         idle();
     }
 
-    if (pet.state !== 'air' && pet.state !== 'dragged') pet.y = ground();
-    pet.x = clamp(pet.x, minX(), maxX());
+    if (pet.state !== 'air' && pet.state !== 'dragged' && pet.surface !== 'air') placeAt(pet.p);
   }
 
   function updateToys(dt) {
@@ -784,13 +951,15 @@
   function drawPetSprite() {
     const s = S();
     const img = drawPet(pose());
-    const rad = (pet.rot * Math.PI) / 180;
-    const c = Math.cos(rad);
-    const lieLift = -s * (8 * Math.abs(Math.sin(rad)) + (c < 0 ? 11 * -c : 0));
-    drawShadow(pet.x, ground() - pet.y, 8 * s);
+    const anim = (pet.rot * Math.PI) / 180;
+    const surf = ((SURFACE_ROT[pet.surface] || 0) * Math.PI) / 180;
+    const c = Math.cos(anim);
+    // tumbado en el suelo hay que subirlo para que no se hunda
+    const lieLift = onFloor() ? -s * (8 * Math.abs(Math.sin(anim)) + (c < 0 ? 11 * -c : 0)) : 0;
+    if (onFloor() || pet.surface === 'air') drawShadow(pet.x, ground() - pet.y, 8 * s);
     ctx.save();
     ctx.translate(Math.round(pet.x), Math.round(pet.y + lieLift));
-    ctx.rotate(rad);
+    ctx.rotate(surf + anim);
     ctx.scale(pet.facing * s * pet.sx, s * pet.sy);
     ctx.drawImage(img, -GRID.OX, -GRID.OY);
     ctx.restore();
@@ -864,9 +1033,12 @@
     const lh = 17;
     const w = bubble.width + pad * 2;
     const h = bubble.lines.length * lh + pad * 2 - 4;
-    const headY = pet.carrying ? pet.y - 22 * s : pet.y - 14 * s;
-    const bx = clamp(pet.x - w / 2, 6, W - w - 6);
-    const by = Math.max(6, headY - h - 12);
+    const box = petRect();
+    const cx = box.x + box.w / 2;
+    const top = pet.carrying ? box.y - 9 * s : box.y;
+    const below = top - h - 12 < 6;
+    const bx = clamp(cx - w / 2, 6, W - w - 6);
+    const by = below ? Math.min(H - h - 6, box.y + box.h + 12) : top - h - 12;
     const a = clamp(Math.min(bubble.t / 0.15, (bubble.dur - bubble.t) / 0.3), 0, 1);
     ctx.globalAlpha = a;
     ctx.fillStyle = '#FFFDF8';
@@ -875,15 +1047,17 @@
     roundRect(bx, by, w, h, 10);
     ctx.fill();
     ctx.stroke();
-    // colita
-    const tx = clamp(pet.x, bx + 14, bx + w - 14);
+    // colita (hacia abajo, o hacia arriba si el bocadillo está debajo)
+    const tx = clamp(cx, bx + 14, bx + w - 14);
+    const edge = below ? by + 1 : by + h - 1;
+    const tip = below ? by - 9 : by + h + 9;
     ctx.beginPath();
-    ctx.moveTo(tx - 7, by + h - 1);
-    ctx.lineTo(tx, by + h + 9);
-    ctx.lineTo(tx + 7, by + h - 1);
+    ctx.moveTo(tx - 7, edge);
+    ctx.lineTo(tx, tip);
+    ctx.lineTo(tx + 7, edge);
     ctx.fill();
     ctx.stroke();
-    ctx.fillRect(tx - 6, by + h - 3, 12, 3);
+    ctx.fillRect(tx - 6, below ? by : by + h - 3, 12, 3);
     ctx.fillStyle = '#2B2620';
     ctx.font = '13px system-ui, sans-serif';
     ctx.textBaseline = 'top';
@@ -911,8 +1085,18 @@
   // ---------- ratón ----------
   function petRect() {
     const s = S();
+    const hw = petHalfW();
+    const h = petHeight();
+    switch (pet.surface) {
+      case 'left':
+        return { x: 0, y: pet.y - hw, w: h + 2, h: hw * 2 };
+      case 'right':
+        return { x: W - h - 2, y: pet.y - hw, w: h + 2, h: hw * 2 };
+      case 'ceiling':
+        return { x: pet.x - hw, y: 0, w: hw * 2, h: h + 2 };
+    }
     if (Math.abs(pet.rot) > 45 && Math.abs(pet.rot) < 135) return { x: pet.x - 13 * s, y: pet.y - 10 * s, w: 26 * s, h: 10 * s };
-    return { x: pet.x - petHalfW(), y: pet.y - petHeight() - 1, w: petHalfW() * 2, h: petHeight() + 2 };
+    return { x: pet.x - hw, y: pet.y - h - 1, w: hw * 2, h: h + 2 };
   }
   function toyRect(t) {
     const { w, h } = toySize(t);
@@ -957,6 +1141,7 @@
       if (drag.kind === 'pet') {
         if (pet.state === 'sleep') pet.forcedSleep = false;
         cancelTask();
+        pet.surface = 'air';
         setState('dragged');
         say(Quips.line('grabbed'), 2);
       } else {
@@ -998,6 +1183,16 @@
       return;
     }
     if (d.kind === 'pet') {
+      // si lo sueltas despacio junto a una pared o el techo, se agarra
+      const gentle = Math.hypot(vx, vy) < 500;
+      const edge =
+        pet.x < minX() + 12 ? 'left' : pet.x > maxX() - 12 ? 'right' : pet.y - petHeight() < 12 ? 'ceiling' : null;
+      if (gentle && edge) {
+        attach(edge, edge === 'ceiling' ? pet.x : pet.y - 6 * S());
+        setState('land');
+        say(Quips.line('grab_wall'), 2);
+        return;
+      }
       pet.vx = vx;
       pet.vy = vy;
       setState('air', { spin: Math.abs(vx) > 900 ? Math.sign(vx) * 540 : 0 });
@@ -1147,7 +1342,7 @@
 
     chatter.timer -= dt;
     if (chatter.timer <= 0 && canTalk()) {
-      say(Quips.line(Quips.ambientCategory({ mode: pet.mode, toys: toys.length }), { name: cfg.name }));
+      say(Quips.line(Quips.ambientCategory({ mode: pet.mode, toys: toys.length, onWall: offFloor() }), { name: cfg.name }));
       resetChatterTimer();
     }
   }
@@ -1182,5 +1377,5 @@
   requestAnimationFrame(frame);
 
   // Para pruebas desde la consola
-  window.__pet = { pet, toys, runCommand, snapshot, say, cfg, chatter, setUserIdle: (s) => (userIdle = s) };
+  window.__pet = { pet, toys, runCommand, snapshot, say, cfg, chatter, placeAt, perim, setUserIdle: (s) => (userIdle = s) };
 })();

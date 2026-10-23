@@ -108,6 +108,41 @@
       '*bosteza* Avísame si pasa algo interesante. No pasará.',
     ],
 
+    // --- trepando por la pantalla ---
+    climb: [
+      'Voy a por las vistas. Desde el techo se ve todo mejor.',
+      'Modo escalada. No me mires, que me pongo nervioso.',
+      'Las paredes son suelos que no se han decidido.',
+      'Si me caigo, que conste que fue idea mía.',
+    ],
+    slip: [
+      '¡Uy, uy, uy, que me resbalo!',
+      '¿Quién ha encerado la pared?',
+      'La gravedad me odia.',
+      'Esto pasa por no hacer piernas.',
+    ],
+    drop: [
+      '¡Geronimooo!',
+      '¡Allá voy!',
+      'Bajar andando es de cobardes.',
+      'Atajo.',
+    ],
+    asleep_fall: [
+      'Me estoy quedando dormi… ¡AAAH!',
+      'zzz… ¡¿eh?! ¡¿Por qué estoy cayendo?!',
+      'Dormir colgado del techo: mala idea, apuntado.',
+    ],
+    grab_wall: [
+      '¡Agarrado! Soy básicamente una araña.',
+      'Me quedo aquí colgado. Por gusto.',
+      'Mira mamá, sin suelo.',
+    ],
+    on_wall: [
+      'Desde aquí arriba pareces más pequeño. Y más ocupado.',
+      'Estoy en la pared. ¿Qué? Es mi pared.',
+      'Vista de pájaro activada. Tu escritorio necesita una limpieza.',
+    ],
+
     // --- reacciones ---
     poke: [
       '¿Sí? ¿Querías algo o solo clicar cosas?',
@@ -195,6 +230,7 @@
     if (ctx.mode === 'stay') options.push(['stay', 6]);
     if (ctx.mode === 'follow') options.push(['follow', 6]);
     if (ctx.toys > 0) options.push(['toys', 2]);
+    if (ctx.onWall) options.push(['on_wall', 8]);
     const total = options.reduce((s, o) => s + o[1], 0);
     let r = Math.random() * total;
     for (const [cat, w] of options) {

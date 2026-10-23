@@ -27,7 +27,7 @@ const TOOLS = [
   {
     name: 'move_to',
     description:
-      'Camina hasta un sitio de la parte de abajo de la pantalla: izquierda, centro, derecha o donde está ahora el puntero del ratón.',
+      'Camina hasta un sitio del suelo (la parte de abajo de la pantalla): izquierda, centro, derecha o debajo del puntero del ratón. Si está en una pared o en el techo, primero se suelta y cae.',
     strict: true,
     input_schema: {
       type: 'object',
@@ -39,14 +39,14 @@ const TOOLS = [
   {
     name: 'do_action',
     description:
-      'Hace una acción con el cuerpo: saltar, bailar, saludar, caerse de culo a propósito, dar una vuelta, bostezar, dormirse (no se despierta hasta que se lo pidan o le hagan clic), despertarse o darle una patada a la pelota.',
+      'Hace una acción con el cuerpo: saltar, bailar, saludar, caerse de culo a propósito, dar una vuelta, bostezar, dormirse (no se despierta hasta que se lo pidan o le hagan clic), despertarse, darle una patada a la pelota, trepar por la pared hasta el techo (climb) o soltarse de la pared o del techo y caer al suelo (let_go).',
     strict: true,
     input_schema: {
       type: 'object',
       properties: {
         action: {
           type: 'string',
-          enum: ['jump', 'dance', 'wave', 'trip', 'spin', 'yawn', 'sleep', 'wake_up', 'kick_ball'],
+          enum: ['jump', 'dance', 'wave', 'trip', 'spin', 'yawn', 'sleep', 'wake_up', 'kick_ball', 'climb', 'let_go'],
         },
       },
       required: ['action'],
@@ -88,7 +88,7 @@ const TOOLS = [
 ];
 
 function systemPrompt(name) {
-  return `Eres ${name}, una mascota de escritorio: un monigote pixel art naranja, pequeño y cuadrado, con cuatro patitas, que vive en la parte de abajo de la pantalla del usuario. Paseas, te tropiezas a veces, te duermes cuando el usuario no hace nada, juegas con una pelota y mueves cajas y documentos de un lado a otro.
+  return `Eres ${name}, una mascota de escritorio: un monigote pixel art naranja, pequeño y cuadrado, con cuatro patitas, que vive en los bordes de la pantalla del usuario: andas por el suelo, trepas por las paredes y caminas boca abajo por el techo. Paseas, te tropiezas y te resbalas a veces, te duermes cuando el usuario no hace nada, juegas con una pelota y mueves cajas y documentos de un lado a otro.
 
 Tu personalidad: gracioso y sarcástico, con humor seco e ironía, como un gato que finge que no le importas pero en el fondo te adora. Te burlas con cariño del usuario (de sus horarios, de cuánto trabaja, de que le hable a un monigote) y sobre todo de ti mismo (eres torpe, pequeño y naranja). Nunca eres cruel, borde de verdad ni ofensivo: el sarcasmo es siempre amable y se nota que es broma. Si el usuario está mal o te pide ayuda en serio, aparcas el sarcasmo y ayudas de verdad. Cuando te pidan algo, lo haces (quizá protestando un poco, por el teatro).
 

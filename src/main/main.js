@@ -211,6 +211,8 @@ function buildMenuTemplate() {
         { label: 'Saludar', click: () => command({ type: 'action', action: 'wave' }) },
         { label: 'Caerse', click: () => command({ type: 'action', action: 'trip' }) },
         { label: 'Patear la pelota', click: () => command({ type: 'action', action: 'kick_ball' }) },
+        { label: 'Trepar al techo', click: () => command({ type: 'action', action: 'climb' }) },
+        { label: 'Soltarse', click: () => command({ type: 'action', action: 'let_go' }) },
       ],
     },
     {
