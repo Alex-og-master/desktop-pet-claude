@@ -1,7 +1,7 @@
 {
   "name": "desktop-pet-claude",
   "productName": "Clawdy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Una mascota de escritorio pixel art inspirada en el monigote de Claude, con la que puedes hablar.",
   "main": "src/main/main.js",
   "author": "Alex-og-master",
