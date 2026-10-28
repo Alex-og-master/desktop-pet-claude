@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const on = (channel) => (cb) => ipcRenderer.on(channel, (_e, data) => cb(data));
 
 contextBridge.exposeInMainWorld('petAPI', {
-  setHitRects: (rects) => ipcRenderer.send('pet:hit-rects', rects),
+  setRegions: (regions) => ipcRenderer.send('pet:regions', regions),
   setCapture: (on) => ipcRenderer.send('pet:capture', on),
   openChat: () => ipcRenderer.send('pet:open-chat'),
   contextMenu: () => ipcRenderer.send('pet:context-menu'),

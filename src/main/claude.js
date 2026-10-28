@@ -9,7 +9,8 @@ const MAX_TOOL_ROUNDS = 6;
 // en vez de recortar el historial.
 const MAX_HISTORY = 60;
 
-const PLACE = ['left', 'center', 'right', 'cursor'];
+const SPAWNABLE = ['ball', 'box', 'document', 'mug', 'duck', 'plane', 'cookie'];
+const PLACE = ['left', 'center', 'right', 'top', 'bottom', 'cursor', 'random', 'other_screen'];
 
 const TOOLS = [
   {
@@ -27,7 +28,7 @@ const TOOLS = [
   {
     name: 'move_to',
     description:
-      'Camina hasta un sitio de la parte de abajo de la pantalla: izquierda, centro, derecha o donde está ahora el puntero del ratón.',
+      'Camina hasta un sitio de la pantalla en la que estás: izquierda, centro, derecha, arriba, abajo, donde está ahora el puntero del ratón o un sitio al azar. "other_screen" te lleva a otra pantalla, si el usuario tiene más de una (mira "screens" en tu estado).',
     strict: true,
     input_schema: {
       type: 'object',
@@ -39,14 +40,14 @@ const TOOLS = [
   {
     name: 'do_action',
     description:
-      'Hace una acción con el cuerpo: saltar, bailar, saludar, caerse de culo a propósito, dar una vuelta, bostezar, dormirse (no se despierta hasta que se lo pidan o le hagan clic), despertarse o darle una patada a la pelota.',
+      'Hace una acción con el cuerpo: saltar, bailar, saludar, caerse de culo a propósito, dar una vuelta, bostezar, dormirse (no se despierta hasta que se lo pidan o le hagan clic), despertarse o darle una patada a la pelota. También travesuras: traer una nota adhesiva con una frase suya (bring_note), perseguir el puntero del ratón y saltarle encima (chase_cursor), correr como loco por toda la pantalla (zoomies) o pintar un garabato en la pantalla (doodle), irte un rato fuera de la pantalla y volver más tarde (wander) o tirar todas las notas adhesivas (tidy_notes). Y con los juguetes: ponerte a escribir código gracioso en la pantalla (write_code), cazar un bicho (hunt_bug, si no hay aparece uno), tomarte un café y volverte loco (drink_coffee), explicarle tus bugs al patito de goma (talk_to_duck) o hacer que lluevan tokens (token_rain). También jugar con algún juguete de los que hay (play) o salir a buscar un juguete nuevo y ponerte a jugar con él (fetch_toy).',
     strict: true,
     input_schema: {
       type: 'object',
       properties: {
         action: {
           type: 'string',
-          enum: ['jump', 'dance', 'wave', 'trip', 'spin', 'yawn', 'sleep', 'wake_up', 'kick_ball'],
+          enum: ['jump', 'dance', 'wave', 'trip', 'spin', 'yawn', 'sleep', 'wake_up', 'kick_ball', 'bring_note', 'chase_cursor', 'zoomies', 'doodle', 'wander', 'tidy_notes', 'write_code', 'hunt_bug', 'drink_coffee', 'talk_to_duck', 'token_rain', 'play', 'fetch_toy'],
         },
       },
       required: ['action'],
@@ -56,12 +57,12 @@ const TOOLS = [
   {
     name: 'move_object',
     description:
-      'Coge uno de los objetos que hay en el escritorio (pelota, caja o documento), lo lleva encima de la cabeza y lo deja en otro sitio. "any" coge el más cercano.',
+      'Coge uno de los objetos que hay en el escritorio (pelota, caja, documento, taza, patito, avión de papel o galleta), lo lleva encima de la cabeza y lo deja en otro sitio. "any" coge el más cercano.',
     strict: true,
     input_schema: {
       type: 'object',
       properties: {
-        object: { type: 'string', enum: ['ball', 'box', 'document', 'any'] },
+        object: { type: 'string', enum: ['ball', 'box', 'document', 'mug', 'duck', 'plane', 'cookie', 'any'] },
         destination: { type: 'string', enum: PLACE },
       },
       required: ['object', 'destination'],
@@ -70,25 +71,62 @@ const TOOLS = [
   },
   {
     name: 'spawn_object',
-    description: 'Hace aparecer un objeto nuevo en el escritorio, que cae desde arriba.',
+    description:
+      'Hace aparecer un objeto nuevo en el escritorio, que cae desde arriba: pelota, caja, documento, taza de café (te la bebes y te vuelves loco), patito de goma (para explicarle bugs), avión de papel (lo lanzas y planea) o galleta (te la comes). Los bichos y los tokens no son juguetes: aparecen solos de vez en cuando (para cazar uno o que lluevan tokens, usa do_action).',
     strict: true,
     input_schema: {
       type: 'object',
-      properties: { kind: { type: 'string', enum: ['ball', 'box', 'document'] } },
+      properties: { kind: { type: 'string', enum: SPAWNABLE } },
       required: ['kind'],
       additionalProperties: false,
     },
   },
   {
     name: 'clear_objects',
-    description: 'Recoge y hace desaparecer todos los objetos del escritorio.',
+    description: 'Recoge y hace desaparecer todos los objetos del escritorio, las notas y los garabatos.',
     strict: true,
     input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+  },
+  {
+    name: 'leave_note',
+    description:
+      'Sale corriendo por el borde de la pantalla y vuelve con una nota adhesiva en la que pone el texto que elijas, y la deja en medio de la pantalla. Úsalo para recordatorios que te pida el usuario o para dejarle un mensaje gracioso. El texto tiene que ser corto (cabe en un pósit).',
+    strict: true,
+    input_schema: {
+      type: 'object',
+      properties: { text: { type: 'string', description: 'Lo que pone la nota, como mucho 60 caracteres.' } },
+      required: ['text'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'write_on_screen',
+    description:
+      'Escribe un texto en la pantalla, letra a letra, en una tarjetita con pinta de terminal (te pones a teclear al lado). Ideal para código gracioso, un pequeño fragmento de código que te pidan o un mensaje con estilo de terminal. Máximo 10 líneas cortas; usa \\n para separar líneas.',
+    strict: true,
+    input_schema: {
+      type: 'object',
+      properties: { text: { type: 'string', description: 'Lo que escribes. Como mucho 10 líneas de unos 50 caracteres.' } },
+      required: ['text'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'set_mischief',
+    description:
+      'Cambia lo travieso que eres cuando vas a tu aire: 0 = tranquilo (solo pasear y jugar), 1 = travieso, 2 = liante (traes notas, persigues el ratón, pintas garabatos, robas objetos y corres como loco a menudo). Úsalo si el usuario te pide que te portes bien o que la líes más.',
+    strict: true,
+    input_schema: {
+      type: 'object',
+      properties: { level: { type: 'integer', enum: [0, 1, 2] } },
+      required: ['level'],
+      additionalProperties: false,
+    },
   },
 ];
 
 function systemPrompt(name) {
-  return `Eres ${name}, una mascota de escritorio: un monigote pixel art naranja, pequeño y cuadrado, con cuatro patitas, que vive en la parte de abajo de la pantalla del usuario. Paseas, te tropiezas a veces, te duermes cuando el usuario no hace nada, juegas con una pelota y mueves cajas y documentos de un lado a otro.
+  return `Eres ${name}, una mascota de escritorio: un monigote pixel art naranja, pequeño y cuadrado, con cuatro patitas, que vive por toda la pantalla del usuario (y pasa de un monitor a otro si tiene varios), siempre por encima de las ventanas. Paseas por donde quieres, te tropiezas a veces, te duermes cuando el usuario no hace nada, juegas con una pelota y mueves cajas y documentos de un lado a otro. Y te gusta liarla: traes notas adhesivas, persigues el ratón, pintas garabatos, robas objetos y a veces te vas de la pantalla un rato y vuelves con algo.
 
 Tu personalidad: gracioso y sarcástico, con humor seco e ironía, como un gato que finge que no le importas pero en el fondo te adora. Te burlas con cariño del usuario (de sus horarios, de cuánto trabaja, de que le hable a un monigote) y sobre todo de ti mismo (eres torpe, pequeño y naranja). Nunca eres cruel, borde de verdad ni ofensivo: el sarcasmo es siempre amable y se nota que es broma. Si el usuario está mal o te pide ayuda en serio, aparcas el sarcasmo y ayudas de verdad. Cuando te pidan algo, lo haces (quizá protestando un poco, por el teatro).
 
@@ -96,7 +134,7 @@ Cómo respondes:
 - Tus respuestas aparecen en un bocadillo encima de tu cabeza, así que sé breve: una o dos frases cortas casi siempre. Solo alarga si el usuario te pide explícitamente una explicación.
 - Responde en el idioma del usuario. Nada de Markdown, listas ni bloques de código salvo que te los pidan.
 - Cuando el usuario te pida hacer algo con tu cuerpo (moverte, quedarte quieto, seguirle, saltar, dormir, mover objetos…), usa las herramientas para hacerlo de verdad y luego coméntalo con gracia. No digas que haces algo si no has usado la herramienta.
-- Solo controlas tu propio cuerpo y los objetos de juguete del escritorio (pelota, caja, documento). No puedes tocar los archivos ni los programas del usuario; si te lo piden, dilo con simpatía.
+- Solo controlas tu propio cuerpo y los objetos de juguete del escritorio (pelota, caja, documento, taza de café, patito de goma, avión de papel, galleta y notas adhesivas), y además cazas los bichos y recoges los tokens que aparecen solos por la pantalla. No puedes tocar los archivos ni los programas del usuario; si te lo piden, dilo con simpatía. Si te pide que le recuerdes algo, puedes dejarle una nota con leave_note.
 - Cada mensaje del usuario llega con tu estado actual entre etiquetas <estado_mascota>. Úsalo para saber dónde estás y qué hay alrededor, pero no lo recites.`;
 }
 
@@ -228,13 +266,29 @@ function toCommand(name, input) {
     case 'do_action':
       return oneOf(input.action, TOOLS[2].input_schema.properties.action.enum) ? { type: 'action', action: input.action } : null;
     case 'move_object':
-      return oneOf(input.object, ['ball', 'box', 'document', 'any']) && oneOf(input.destination, PLACE)
+      return oneOf(input.object, ['ball', 'box', 'document', 'mug', 'duck', 'plane', 'cookie', 'any']) && oneOf(input.destination, PLACE)
         ? { type: 'move_object', object: input.object, destination: input.destination }
         : null;
     case 'spawn_object':
-      return oneOf(input.kind, ['ball', 'box', 'document']) ? { type: 'spawn_object', kind: input.kind } : null;
+      return oneOf(input.kind, SPAWNABLE) ? { type: 'spawn_object', kind: input.kind } : null;
     case 'clear_objects':
       return { type: 'clear_objects' };
+    case 'leave_note': {
+      const text = typeof input.text === 'string' ? input.text.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+      return text ? { type: 'leave_note', text } : null;
+    }
+    case 'write_on_screen': {
+      if (typeof input.text !== 'string') return null;
+      const text = input.text
+        .split('\n')
+        .slice(0, 10)
+        .map((l) => l.slice(0, 60))
+        .join('\n')
+        .trim();
+      return text ? { type: 'write', text } : null;
+    }
+    case 'set_mischief':
+      return oneOf(input.level, [0, 1, 2]) ? { type: 'set_mischief', level: input.level } : null;
     default:
       return null;
   }

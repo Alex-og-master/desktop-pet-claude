@@ -43,3 +43,16 @@ jobs:
         run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Al descargar un AppImage el navegador le quita el permiso de
+      # ejecución; dentro de un .zip lo conserva, así basta con descomprimir
+      # y hacer doble clic.
+      - name: Linux, AppImage listo para doble clic (.zip)
+        if: runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd dist
+          chmod +x Clawdy-Linux.AppImage
+          zip Clawdy-Linux.zip Clawdy-Linux.AppImage
+          gh release upload "$TAG" Clawdy-Linux.zip --clobber --repo "$GITHUB_REPOSITORY"

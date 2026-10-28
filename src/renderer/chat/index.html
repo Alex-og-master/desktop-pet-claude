@@ -24,6 +24,7 @@
       <button>Sígueme</button>
       <button>Baila un poco</button>
       <button>Trae la pelota al centro</button>
+      <button>Déjame una nota</button>
       <button>Vuelve a pasear</button>
     </div>
 
@@ -65,9 +66,18 @@
         </select>
         <small>Son frases ya escritas: no usan Claude ni gastan tokens. Solo se usa Claude cuando le escribes en este chat.</small>
       </label>
+      <label>
+        Travesuras
+        <select id="mischief">
+          <option value="0">Tranquilo (solo pasea y juega)</option>
+          <option value="1">Travieso</option>
+          <option value="2">Liante (no para quieto)</option>
+        </select>
+        <small>Traer notas, perseguir el ratón, pintar garabatos, robar cosas…</small>
+      </label>
       <label class="row">
         <input id="open-at-login" type="checkbox" />
-        Abrir al iniciar sesión
+        Iniciar con el ordenador
       </label>
       <div class="actions">
         <button id="close-settings" type="button" class="secondary">Cancelar</button>

@@ -1,7 +1,7 @@
 {
   "name": "desktop-pet-claude",
   "productName": "Clawdy",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Una mascota de escritorio pixel art inspirada en el monigote de Claude, con la que puedes hablar.",
   "main": "src/main/main.js",
   "author": "Alex-og-master",
@@ -44,20 +44,30 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "portable",
+        "nsis"
       ],
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "artifactName": "Clawdy-Windows-Instalador.exe"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-portable.${ext}"
+      "artifactName": "Clawdy-Windows.exe"
     },
     "mac": {
       "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        },
         {
           "target": "dmg",
           "arch": [
@@ -70,7 +80,8 @@
       "extendInfo": {
         "LSUIElement": true
       },
-      "identity": "-"
+      "identity": "-",
+      "artifactName": "Clawdy-Mac.${ext}"
     },
     "linux": {
       "target": [
@@ -81,6 +92,12 @@
       "icon": "build/icon.png",
       "maintainer": "Alex-og-master",
       "syncDesktopName": true
+    },
+    "appImage": {
+      "artifactName": "Clawdy-Linux.AppImage"
+    },
+    "deb": {
+      "artifactName": "Clawdy-Linux.deb"
     }
   },
   "desktopName": "clawdy.desktop"

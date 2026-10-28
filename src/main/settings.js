@@ -9,8 +9,10 @@ const DEFAULTS = {
   scale: 4,
   sleepAfter: 120,
   chatter: 2,
+  mischief: 2,
   model: 'claude-opus-5-5',
-  openAtLogin: false,
+  // La app instalada arranca sola al encender el ordenador (se quita en el menú).
+  openAtLogin: app.isPackaged,
   apiKey: '',
 };
 
@@ -66,6 +68,7 @@ function publicView() {
     scale: s.scale,
     sleepAfter: s.sleepAfter,
     chatter: s.chatter,
+    mischief: s.mischief,
     model: s.model,
     openAtLogin: s.openAtLogin,
     hasKey: !!apiKey(),

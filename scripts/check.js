@@ -27,7 +27,7 @@ const { TOOLS, toCommand } = require('../src/main/claude');
 for (const tool of TOOLS) {
   const props = tool.input_schema.properties;
   const sample = {};
-  for (const [k, v] of Object.entries(props)) sample[k] = v.enum[0];
+  for (const [k, v] of Object.entries(props)) sample[k] = v.enum ? v.enum[0] : 'hola';
   if (!toCommand(tool.name, sample)) {
     failed = true;
     console.error(`✗ la herramienta ${tool.name} no se traduce a un comando`);

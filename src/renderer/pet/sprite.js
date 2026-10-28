@@ -190,7 +190,121 @@
         r(c, 2, 7, 2, 1, '#9AA7C7');
       }),
     },
+    // Nota adhesiva que trae la mascota de fuera de la pantalla. El texto se
+    // escribe encima al dibujarla (cada nota dice una cosa).
+    note: {
+      label: 'nota',
+      w: 34,
+      h: 27,
+      bounce: 0.05,
+      friction: 8,
+      sprite: buildToy(34, 27, (c) => {
+        r(c, 0, 1, 34, 26, '#E0C341');
+        r(c, 0, 0, 34, 26, '#FCE77A');
+        r(c, 0, 0, 34, 3, '#F5D94E');
+        r(c, 31, 23, 3, 3, '#E9CD4F');
+      }),
+    },
   };
+
+  // Más juguetes, pintados con filas de letras (cada letra, un color).
+  function fromRows(rows, palette) {
+    return buildToy(rows[0].length, rows.length, (c) => {
+      rows.forEach((row, y) => [...row].forEach((ch, x) => palette[ch] && r(c, x, y, 1, 1, palette[ch])));
+    });
+  }
+  Object.assign(TOYS, {
+    mug: {
+      label: 'taza de café',
+      w: 10,
+      h: 9,
+      bounce: 0.1,
+      friction: 6,
+      sprite: fromRows(
+        ['.ssssss...', '.bbbbbb...', '.wwwwwwss.', '.wwwwww.s.', '.wwwwww.s.', '.wwwwwwss.', '.wwwwww...', '.swwwwws..', '..ssssss..'],
+        { w: '#F3EEE6', s: '#BDB3A5', b: '#6B3F22' }
+      ),
+    },
+    duck: {
+      label: 'patito de goma',
+      w: 10,
+      h: 9,
+      bounce: 0.45,
+      friction: 2,
+      sprite: fromRows(
+        ['....yyy...', '...yyyyy..', '...yyeyyoo', '...yyyyyoo', 'y...yyyy..', 'yyyyyyyyy.', 'yyyyyyyyy.', '.yyyyyyy..', '..dddddd..'],
+        { y: '#F5C542', d: '#D9A626', e: '#1E1B19', o: '#E8743B' }
+      ),
+    },
+    bug: {
+      label: 'bicho',
+      w: 8,
+      h: 6,
+      bounce: 0.2,
+      friction: 1,
+      sprite: fromRows(
+        ['......a.', '..ggg.a.', '.gGgGgkk', 'gggggggk', '.ggggg..', '.k.k.k..'],
+        { g: '#3B7A3A', G: '#6DB06B', k: '#1E1B19', a: '#1E1B19' }
+      ),
+    },
+    plane: {
+      label: 'avión de papel',
+      w: 12,
+      h: 6,
+      bounce: 0.1,
+      friction: 5,
+      sprite: fromRows(['..........ww', '.......wwwws', '....wwwwwss.', '.wwwwwwsss..', 'wwsssss.....', '.sss........'], {
+        w: '#FAFAF5',
+        s: '#C9CFD9',
+      }),
+    },
+    cookie: {
+      label: 'galleta',
+      w: 9,
+      h: 9,
+      bounce: 0.2,
+      friction: 5,
+      sprite: fromRows(
+        ['..ccccc..', '.cccccdc.', 'ccdcccccc', 'cccccdccc', 'cdcccccdc', 'cccdccccc', 'cccccccdc', '.cdccccc.', '..ccccc..'],
+        { c: '#D9A066', d: '#5A3A22' }
+      ),
+    },
+    token: {
+      label: 'token',
+      w: 7,
+      h: 7,
+      bounce: 0.5,
+      friction: 3,
+      sprite: fromRows(['.ddddd.', 'dgglggd', 'dgdddgd', 'dggdggd', 'dggdggd', 'dgggggd', '.ddddd.'], {
+        d: '#C99A2E',
+        g: '#F5C542',
+        l: '#FFF1B8',
+      }),
+    },
+  });
+
+  // Garabatos que la mascota pinta en la pantalla (se borran solos o con un clic).
+  const DOODLE_ROWS = [
+    ['.xx.xx.', 'xxxxxxx', 'xxxxxxx', '.xxxxx.', '..xxx..', '...x...'],
+    ['.xxxxx.', 'x.....x', 'x.x.x.x', 'x.....x', 'x.x.x.x', 'x..x..x', '.xxxxx.'],
+    ['...x...', '..xxx..', 'xxxxxxx', '.xxxxx.', '.xx.xx.', 'x.....x'],
+    ['.xxxx', 'x....', 'x....', 'x....', '.xxxx'],
+    ['.xxx.', 'x...x', '...x.', '..x..', '.....', '..x..'],
+    ['x...x...x', '.x.x.x.x.', '..x...x..'],
+    // cara de gato
+    ['x.......x', 'xx.....xx', 'x.xxxxx.x', 'x.......x', 'x.x...x.x', 'x...x...x', 'x..x.x..x', '.x.....x.', '..xxxxx..'],
+    // flecha
+    ['....x....', '...xxx...', '..x.x.x..', '.x..x..x.', '....x....', '....x....', '....x....'],
+    // "XD"
+    ['x...x.xxx..', '.x.x..x..x.', '..x...x..x.', '.x.x..x..x.', 'x...x.xxx..'],
+    // Clawdy en pequeñito
+    ['.xxxxxxx.', 'xx.xxx.xx', 'xxxxxxxxx', '.xxxxxxx.', '.x.x.x.x.'],
+  ];
+  const DOODLES = DOODLE_ROWS.map((rows) =>
+    buildToy(rows[0].length, rows.length, (c) => {
+      rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'x' && r(c, x, y, 1, 1, COLORS.body)));
+    })
+  );
 
   // Corazón pixelado para las partículas
   const HEART = buildToy(7, 6, (c) => {
@@ -198,5 +312,5 @@
     rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'x' && r(c, x, y, 1, 1, '#E8566C')));
   });
 
-  window.Sprites = { drawPet, TOYS, HEART, COLORS, GRID: { GW, GH, OX, OY } };
+  window.Sprites = { drawPet, TOYS, HEART, DOODLES, COLORS, GRID: { GW, GH, OX, OY } };
 })();

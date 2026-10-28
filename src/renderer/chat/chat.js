@@ -17,6 +17,9 @@
     move_object: 'mueve un objeto',
     spawn_object: 'saca un objeto',
     clear_objects: 'recoge',
+    leave_note: 'deja una nota',
+    set_mischief: 'cambia de humor',
+    write_on_screen: 'escribe en la pantalla',
   };
 
   function add(kind, text, extra) {
@@ -104,6 +107,7 @@
     $('name').value = settings.name;
     $('sleep-after').value = settings.sleepAfter;
     $('chatter').value = String(settings.chatter);
+    $('mischief').value = String(settings.mischief);
     $('open-at-login').checked = settings.openAtLogin;
     $('settings').hidden = false;
   }
@@ -119,6 +123,7 @@
       name: $('name').value,
       sleepAfter: Number($('sleep-after').value),
       chatter: Number($('chatter').value),
+      mischief: Number($('mischief').value),
       openAtLogin: $('open-at-login').checked,
     };
     const key = $('api-key').value.trim();
