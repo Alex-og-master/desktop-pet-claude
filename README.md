@@ -22,7 +22,7 @@
   - **Avión de papel**: lo lanza y planea lejos.
   - **Galleta**: se la come. Ñam.
   - Y la **pelota**, la **caja** y el **documento** de siempre.
-  - **Juega con todo**: lanza cosas por los aires, salta por encima de la caja y lee en voz alta documentos y notas. Y a menudo sale a buscar un juguete nuevo y lo cambia por uno viejo, así que van rotando (como mucho hay 4 a la vez).
+  - **Juega con todo**: lanza cosas por los aires, salta por encima de la caja y lee en voz alta documentos y notas. Y cada 10 minutos, más o menos, sale a buscar un juguete nuevo y lo cambia por el más viejo, así que van rotando (como mucho hay 4 a la vez).
 - 🐞 **Bichos y tokens**: no son juguetes, aparecen solos de vez en cuando. Los **bichos** entran correteando por un borde y huyen; Clawdy los persigue y los aplasta ("bug arreglado"), y tú también puedes con un clic. Los **tokens** brotan por la pantalla y él los colecciona como si no hubiera mañana. Si nadie los recoge, se acaban yendo.
 - ⌨️ **Escribe en la pantalla**: se pone a teclear y aparece una tarjetita de terminal con código gracioso o chistes al estilo Claude Code, letra a letra. Un clic la borra. Desde el chat le puedes pedir que escriba lo que quieras.
 - 🤕 **Se cae**: a veces se tropieza andando y acaba boca arriba pataleando. Si lo coges con el ratón y lo lanzas con fuerza, se estampa con un buen *plaf*.

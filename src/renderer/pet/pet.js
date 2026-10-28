@@ -453,8 +453,10 @@
       const ex = exits(pet.y).sort((a, b) => dist(a, pet) - dist(b, pet));
       const e = ex.length > 1 && ex[1].area === areaOf(pet) && Math.random() < 0.25 ? ex[1] : ex[0];
       if (!e) return idle();
+      if (pet.task) pet.task.exit = e;
+      // sale de la pantalla a toda prisa
       walkTo(e.x, e.y, {
-        run: true,
+        speed: 260,
         noTrip: true,
         offscreen: true,
         area: e.area,
@@ -465,6 +467,7 @@
       pet.task.toy = o.take;
       pet.task.onPicked = go;
       walkTo(o.take.x, o.take.y, {
+        run: true,
         noTrip: true,
         onArrive: () => {
           if (!pet.task || o.take.held) return idle();
@@ -499,6 +502,9 @@
   // vez en cuando (ver updateSpawner) y las notas van aparte.
   const PLAY_KINDS = ['ball', 'box', 'document', 'mug', 'duck', 'plane', 'cookie'];
   const MAX_TOYS = 4;
+  // cuándo toca cambiar un juguete (cada 8-12 minutos; entre medias, a jugar)
+  const swapGap = () => rand(8, 12) * 60000;
+  let nextSwap = performance.now() + swapGap();
   const isToy = (t) => PLAY_KINDS.includes(t.kind);
   const looseToys = () => toys.filter((t) => !t.held && isToy(t));
   const oldestToy = () => looseToys().sort((a, b) => a.born - b.born)[0] || null;
@@ -511,6 +517,7 @@
   // Sale un momento a por algo para jugar (mejor algo que no haya en la
   // pantalla) y al volver se pone a jugar con ello.
   function fetchToyTask() {
+    nextSwap = performance.now() + swapGap();
     const bring = pick(missingToys());
     if (Math.random() < 0.6) say(Quips.line('fetch_toy'), 2.5);
     // con 3 o más juguetes, cambia el más viejo por el nuevo
@@ -574,7 +581,9 @@
     const task = pet.task || {};
     // lo que se había llevado se queda fuera
     if (pet.carrying) removeToy(pet.carrying);
-    const e = pick(exits());
+    // si ha ido a por un juguete, vuelve por donde se fue; si no, por cualquier sitio
+    const back = task.play && task.exit;
+    const e = back ? { ...task.exit, y: randomSpotIn(task.exit.area).y } : pick(exits());
     pet.x = e.x;
     pet.y = e.y;
     pet.facing = e.x < e.area.x ? 1 : -1;
@@ -588,7 +597,7 @@
     const dest = toy ? { x: a.x + a.w * rand(0.2, 0.8), y: a.y + a.h * rand(0.35, 0.9) } : randomSpotIn(a);
     pet.task = toy ? { type: 'return', toy } : null;
     walkTo(dest.x, dest.y, {
-      run: true,
+      speed: back ? 260 : 170,
       noTrip: true,
       offscreen: true,
       onArrive: () => {
@@ -781,6 +790,8 @@
       pet.wantPlay = null;
       if (toys.includes(t) && !t.held) return playWith(t);
     }
+    // cada ~10 minutos cambia el juguete más viejo por otro
+    if (performance.now() > nextSwap && looseToys().length >= 3) return fetchToyTask();
     // lo que más le interesa: cazar bichos y recoger tokens
     const bugs = ofKind('bug');
     const toks = ofKind('token');
@@ -798,7 +809,8 @@
       [anyToy.length ? 4 : 0, () => moveToyTask(pick(anyToy), randomSpot())],
       [anyToy.length ? 14 : 0, () => playWith(leastPlayed(anyToy))],
       // con pocos juguetes, sale a buscar más
-      [looseToys().length < 3 ? 14 + 2 * m : 6 + m, fetchToyTask],
+      // con pocos juguetes sale a buscar más; con 3 o más, solo cuando toca cambiar
+      [looseToys().length < 3 ? 14 + 2 * m : 0, fetchToyTask],
       [5, () => jump()],
       [3, () => setState('dance', { dur: rand(2.5, 4.5) })],
       [3, () => setState('yawn')],
@@ -2344,5 +2356,5 @@
   requestAnimationFrame(frame);
 
   // Para pruebas desde la consola
-  window.__pet = { pet, toys, marks, think, spawner, runCommand, snapshot, say, cfg, chatter, setUserIdle: (s) => (userIdle = s) };
+  window.__pet = { pet, toys, marks, think, spawner, swapNow: () => (nextSwap = 0), runCommand, snapshot, say, cfg, chatter, setUserIdle: (s) => (userIdle = s) };
 })();
